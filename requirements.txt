@@ -1,0 +1,4 @@
+pysimplegui
+pillow
+opencv-python
+imageio
