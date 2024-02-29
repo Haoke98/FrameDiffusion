@@ -7,6 +7,7 @@
 @Software: PyCharm
 @disc:
 ======================================="""
+import queue
 import random
 
 import PySimpleGUI as sg
@@ -16,6 +17,29 @@ import io
 import imageio
 import base64
 from core import frame_diffusion
+from core.hash import get_combined_hash
+import os
+import threading
+
+webui_server_url = 'http://218.31.113.195:57860'
+out_dir = 'api_out'
+out_dir_i2i = os.path.join(out_dir, 'img2img')
+
+
+def get_fp(frame_img_fp, params):
+    hash_value = get_combined_hash(frame_img_fp, params)
+    save_fp = os.path.join(out_dir_i2i, f'{hash_value}.png')
+    return save_fp
+
+
+q = queue.Queue()
+
+
+def handleService():
+    while True:
+        file_name, params = q.get()
+        generated_fp = frame_diffusion(file_name, params)
+        print("已经处理好了:", file_name, params, generated_fp)
 
 
 def loadVideo():
@@ -60,11 +84,13 @@ def main():
         [sg.Text('Video Resize Rate'), sg.Slider(range=(1, 10),
                                                  size=(60, 10), orientation='h', key='-slider3-')],
         [sg.Input(key='-prompt-', size=(1000, 10))],
+        [sg.Input(key='-seed-', size=(1000, 10), default_text="3290305185"),
+         sg.Button('Random Generate', size=(14, 1), pad=((120, 0), 3), font='Helvetica 14')],
         [
             sg.Button('Start', size=(7, 1), pad=((100, 0), 3), font='Helvetica 14'),
             sg.Button('Restart', size=(7, 1), pad=((100, 0), 3), font='Helvetica 14'),
             sg.Button('Exit', size=(7, 1), pad=((100, 0), 3), font='Helvetica 14'),
-            sg.Button('Generate', size=(7, 1), pad=((100, 0), 3), font='Helvetica 14')
+            sg.Button('Generate', size=(10, 1), pad=((100, 0), 3), font='Helvetica 14')
         ],
     ]
 
@@ -93,7 +119,9 @@ def main():
     cur_frame = 0
     startProcess = False
     totalFrames = videoTotalFrames
-    Seed = random.Random().randint(0, 2 ** 32 - 1)
+
+    th = threading.Thread(target=handleService, args=())
+    th.start()
 
     while True:
         event, values = window.read(timeout=0)
@@ -102,19 +130,12 @@ def main():
         skipRate = int(values['-slider-'])
         gifFps = int(values['-slider2-'])
         scale = int(values['-slider3-'])
+        seed = int(values['-seed-'])
 
         if event in ('Generate', None):
             print("要生成了")
             cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_index)
             ret, org_frame = cap.read()
-            # 检查是否成功捕获到了一帧
-            if ret:
-                # 指定图片保存路径和文件名
-                file_name = "saved_frame.jpg"
-                # 保存图像
-                cv2.imwrite(file_name, org_frame)
-                generated_fp = frame_diffusion(file_name, Seed)
-                new_frameElem.update(filename=generated_fp)
 
         if event in ('Start', None):
             startProcess = True
@@ -125,6 +146,28 @@ def main():
             cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_index)
             ret, org_frame = cap.read()
             gui_show_frame(org_frame)
+
+            # 检查是否成功捕获到了一帧
+            if ret:
+                # 指定图片保存路径和文件名
+                file_name = "saved_frame.jpg"
+                # 保存图像
+                cv2.imwrite(file_name, org_frame)
+                params = {
+                    "prompt": "1girl, blue hair",
+                    "seed": seed,
+                    "steps": 20,
+                    "width": videoWidth,
+                    "height": videoHeight,
+                    "denoising_strength": 0.5,
+                    "n_iter": 1,
+                }
+                save_fp = get_fp(file_name, params)
+                if os.path.exists(save_fp):
+                    # 更新GUI上的画面
+                    new_frameElem.update(filename=save_fp, size=(1200, 400))
+                else:
+                    q.put([file_name, params])
 
             slider_elem.update(skipRate)
             gifSliderElem.update(gifFps)
@@ -140,7 +183,7 @@ def main():
                                                                                                             videoTotalFrames,
                                                                                                             gif_duration,
                                                                                                             gifTotalFrames,
-                                                                                                            Seed))
+                                                                                                            seed))
 
 
         else:
@@ -194,35 +237,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # cap = cv2.VideoCapture("/Users/shadikesadamu/Documents/壁纸/视频/已发/2521442.jpeg.mp4")
-    # videoWidth = cap.get(3)
-    # videoHeight = cap.get(4)
-    # videoFps = cap.get(5)
-    # videoTotalFrames = cap.get(7)
-    # print("video info: [fps:{},total_frame:{}]".format(videoFps, videoTotalFrames))
-    # # 随机种子 = 1666545269
-    # seed = random.Random().randint(0, 2 ** 32 - 1)
-    # print("seed: {}".format(seed))
-    # for i in range(videoTotalFrames):
-    #     print("frame{}".format(i + 1))
-    #     init_images = [
-    #         encode_file_to_base64(r"/Users/shadikesadamu/Pictures/vlcsnap-2024-02-29-05h24m21s922.png"),
-    #         # encode_file_to_base64(r"B:\path\to\img_2.png"),
-    #         # "https://image.can/also/be/a/http/url.png",
-    #     ]
-    #     batch_size = 1
-    #     payload = {
-    #         "prompt": "1girl, blue hair",
-    #         "seed": 1,
-    #         "steps": 20,
-    #         "width": 512,
-    #         "height": 512,
-    #         "denoising_strength": 0.5,
-    #         "n_iter": 1,
-    #         "init_images": init_images,
-    #         "batch_size": batch_size if len(init_images) == 1 else len(init_images),
-    #         # "mask": encode_file_to_base64(r"/Users/shadikesadamu/Pictures/img.png")
-    #     }
-    #     # if len(init_images) > 1 then batch_size should be == len(init_images)
-    #     # else if len(init_images) == 1 then batch_size can be any value int >= 1
-    #     call_img2img_api(**payload)
