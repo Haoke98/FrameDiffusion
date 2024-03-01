@@ -62,11 +62,8 @@ def frame_diffusion(frame_img_fp, params, batch_size: int = 1):
         encode_file_to_base64(frame_img_fp),
         # "https://image.can/also/be/a/http/url.png",
     ]
-    payload = {
-        **params
-    }
-    payload["init_images"] = init_images
-    payload["batch_size"] = batch_size if len(init_images) == 1 else len(init_images)
+    payload = {**params, "init_images": init_images,
+               "batch_size": batch_size if len(init_images) == 1 else len(init_images)}
     # "mask": encode_file_to_base64(r"/Users/shadikesadamu/Pictures/img.png")
 
     # if len(init_images) > 1 then batch_size should be == len(init_images)
@@ -81,25 +78,4 @@ def frame_diffusion(frame_img_fp, params, batch_size: int = 1):
 
 
 if __name__ == '__main__':
-    init_images = [
-        encode_file_to_base64(r"/Users/shadikesadamu/Pictures/vlcsnap-2024-02-29-05h24m21s922.png"),
-        # encode_file_to_base64(r"B:\path\to\img_2.png"),
-        # "https://image.can/also/be/a/http/url.png",
-    ]
-    batch_size = 2
-    Seed = 1666545269
-    payload = {
-        "prompt": "1girl, blue hair",
-        "seed": 1,
-        "steps": 20,
-        "width": 512,
-        "height": 512,
-        "denoising_strength": 0.5,
-        "n_iter": 1,
-        "init_images": init_images,
-        "batch_size": batch_size if len(init_images) == 1 else len(init_images),
-        # "mask": encode_file_to_base64(r"/Users/shadikesadamu/Pictures/img.png")
-    }
-    # if len(init_images) > 1 then batch_size should be == len(init_images)
-    # else if len(init_images) == 1 then batch_size can be any value int >= 1
-    call_img2img_api(**payload)
+    pass
