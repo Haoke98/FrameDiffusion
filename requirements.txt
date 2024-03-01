@@ -1,4 +1,4 @@
-pysimplegui
-pillow
-opencv-python
-imageio
+pillow~=10.2.0
+opencv-python~=4.9.0.80
+gradio~=4.19.2
+moviepy~=1.0.3
