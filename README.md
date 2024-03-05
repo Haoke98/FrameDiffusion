@@ -26,7 +26,7 @@ A frame2frame, video2video Video Editor based on the stable-diffusion
 * [ChenyangQiQi / FateZero](https://github.com/ChenyangQiQi/FateZero) : 1k
 
 ### I2V ~ image2video
-
+* [HumanAIGC / AnimateAnyone](https://github.com/HumanAIGC/AnimateAnyone) : 13.5k
 * [AILab-CVC / VideoCrafter](https://github.com/AILab-CVC/VideoCrafter) : 3.8k
 * [ali-vilab / i2vgen-xl](https://github.com/ali-vilab/i2vgen-xl) : 2.3k
 
